@@ -32,5 +32,7 @@ pub const WHISPER_MODEL_CATALOG: &[(&str, &str, u32, &str, &str, &str)] = &[
     // Q5_0 quantized models (balanced speed/accuracy)
     ("medium-q5_0", "ggml-medium-q5_0.bin", 514, "High", "Medium", "Quantized medium model, professional quality"),
     ("large-v3-turbo-q5_0", "ggml-large-v3-turbo-q5_0.bin", 547, "High", "Medium", "Quantized large model, best balance"),
+    ("kotoba-whisper-v2.0-q5_0", "ggml-kotoba-whisper-v2.0-q5_0.bin", 538, "High", "Medium", "Distilled Whisper model for Japanese transcription"),
+    ("kotoba-whisper-v2.0", "ggml-kotoba-whisper-v2.0.bin", 1520, "High", "Medium", "Full precision Kotoba-Whisper for Japanese transcription"),
     ("large-v3-q5_0", "ggml-large-v3-q5_0.bin", 1031, "High", "Slow", "Quantized large model, high accuracy"),
 ];

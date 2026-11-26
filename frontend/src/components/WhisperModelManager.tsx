@@ -442,21 +442,6 @@ export function ModelManager({
     }
   };
 
-  const getDisplayName = (modelName: string): string => {
-    const modelNameMapping: { [key: string]: string } = {
-      "small": "Small",
-      "medium-q5_0": "Medium",
-      "large-v3-q5_0": "Large V3 Compressed",
-      "large-v3-turbo": "Large V3 Turbo",
-      "large-v3": "Large V3"
-    };
-
-    const basicModelNames = ["small", "medium-q5_0", "large-v3-q5_0", "large-v3-turbo", "large-v3"];
-    if (basicModelNames.includes(modelName)) {
-      return modelNameMapping[modelName] || modelName;
-    }
-    return `Whisper ${modelName}`;
-  };
 
   if (loading) {
     return (
@@ -479,7 +464,6 @@ export function ModelManager({
     );
   }
 
-  const basicModelNames = ["small", "medium-q5_0", "large-v3-q5_0", "large-v3-turbo", "large-v3"];
   const basicModels = models.filter(m => basicModelNames.includes(m.name))
     .sort((a, b) => basicModelNames.indexOf(a.name) - basicModelNames.indexOf(b.name));
   const advancedModels = models.filter(m => !basicModelNames.includes(m.name));
@@ -572,6 +556,21 @@ interface ModelCardProps {
   isDownloading: boolean;
   isCancelling: boolean;
   displayName: string;
+}
+
+const basicModelNames = ['small', 'medium-q5_0', 'large-v3-q5_0', 'large-v3-turbo', 'large-v3'];
+const modelLabels: Record<string, string> = {
+  "small": "Small",
+  "medium-q5_0": "Medium",
+  "large-v3-q5_0": "Large V3 Compressed",
+  "large-v3-turbo": "Large V3 Turbo",
+  "large-v3": "Large V3",
+  "kotoba-whisper-v2.0-q5_0": "Kotoba-Whisper v2.0 (Japanese, Q5_0)",
+  "kotoba-whisper-v2.0": "Kotoba-Whisper v2.0 (Japanese, F16)",
+};
+
+export function getDisplayName(modelName: string): string {
+  return modelLabels[modelName] ?? `Whisper ${modelName}`;
 }
 
 function ModelCard({

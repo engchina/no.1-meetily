@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { listen } from '@tauri-apps/api/event';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
+import { useConfig } from '@/contexts/ConfigContext';
+import { selectedSpeakerModel } from '@/lib/meeting-speakers';
 import { toast } from 'sonner';
 import { useTranscripts } from '@/contexts/TranscriptContext';
 import { useSidebar } from '@/components/Sidebar/SidebarProvider';
@@ -68,6 +71,7 @@ export function useRecordingStop(
   } = useSidebar();
 
   const router = useRouter();
+  const { finalModelKey, selectedLanguage } = useConfig();
 
   // Guard to prevent duplicate/concurrent stop calls (e.g., from UI and tray simultaneously)
   const stopInProgressRef = useRef(false);
@@ -296,7 +300,44 @@ export function useRecordingStop(
           // Mark meeting as saved in IndexedDB (for recovery system)
           await markMeetingAsSaved();
 
+          let savedSegments = freshTranscripts.length;
+          if (finalModelKey && folderPath) {
+            const [provider, model] = finalModelKey.split(':');
+            setStatus(RecordingStatus.PROCESSING_TRANSCRIPTS, `Transcribing the full recording with ${model}…`);
+            let stopProgress: UnlistenFn | undefined;
+            try {
+              stopProgress = await listen<{ meeting_id: string; progress_percentage: number }>('retranscription-progress', ({ payload }) => {
+                if (payload.meeting_id === meetingId) {
+                  setStatus(RecordingStatus.PROCESSING_TRANSCRIPTS, `Final transcription · ${model} · ${payload.progress_percentage}%`);
+                }
+              });
+              const result = await invoke<{ segments_count: number }>('finalize_recording_transcript', {
+                meetingId, meetingFolderPath: folderPath, provider, model,
+                language: provider === 'whisper' && selectedLanguage !== 'auto' ? selectedLanguage || null : null,
+              });
+              savedSegments = result.segments_count;
+            } catch (error) {
+              toast.warning('Final transcription failed. The live transcript is saved.', { description: String(error) });
+            } finally {
+              stopProgress?.();
+            }
+          } else if (finalModelKey) {
+            toast.warning('Final transcription needs saved audio. The live transcript is saved.');
+          }
+
           // Clean up session storage
+          const speakerModel = selectedSpeakerModel();
+          if (speakerModel && folderPath) {
+            setStatus(RecordingStatus.PROCESSING_TRANSCRIPTS, 'Identifying speakers in the saved recording…');
+            try {
+              await invoke('identify_meeting_speakers', { meetingId, model: speakerModel });
+            } catch (error) {
+              toast.warning('Transcript saved without speaker labels', { description: String(error) });
+            }
+          } else if (speakerModel) {
+            toast.warning('Speaker identification requires a saved recording.');
+          }
+
           sessionStorage.removeItem('last_recording_folder_path');
           sessionStorage.removeItem('last_recording_meeting_name');
           // Clean up IndexedDB meeting ID (redundant with markMeetingAsSaved cleanup, but ensures cleanup)
@@ -324,7 +365,7 @@ export function useRecordingStop(
 
           // Show success toast with navigation option
           toast.success('Recording saved successfully!', {
-            description: `${freshTranscripts.length} transcript segments saved.`,
+            description: `${savedSegments} transcript segments saved.`,
             action: {
               label: 'View Meeting',
               onClick: () => {
@@ -435,6 +476,8 @@ export function useRecordingStop(
     meetings,
     setIsMeetingActive,
     router,
+    finalModelKey,
+    selectedLanguage,
   ]);
 
   // Expose handleRecordingStop function to window for Rust callbacks

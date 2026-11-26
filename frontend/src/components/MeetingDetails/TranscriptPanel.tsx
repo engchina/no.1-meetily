@@ -1,10 +1,15 @@
 "use client";
 
 import { Transcript, TranscriptSegmentData } from '@/types';
-import { TranscriptView } from '@/components/TranscriptView';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogFooter } from '../ui/dialog';
+import { Input } from '../ui/input';
+import { selectedSpeakerModel, speakerLookup, SpeakerTimeline } from '@/lib/meeting-speakers';
 import { VirtualizedTranscriptView } from '@/components/VirtualizedTranscriptView';
 import { TranscriptButtonGroup } from './TranscriptButtonGroup';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface TranscriptPanelProps {
   transcripts: Transcript[];
@@ -49,6 +54,50 @@ export function TranscriptPanel({
   meetingFolderPath,
   onRefetchTranscripts,
 }: TranscriptPanelProps) {
+  const [timeline, setTimeline] = useState<SpeakerTimeline | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [name, setName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const player = useRef<HTMLAudioElement>(null);
+  const lookup = useMemo(() => speakerLookup(timeline?.turns ?? []), [timeline?.turns]);
+  const model = selectedSpeakerModel();
+  useEffect(() => {
+    let current = true;
+    if (meetingId) invoke<SpeakerTimeline | null>('get_meeting_speakers', {meetingId})
+      .then(value => { if (current) setTimeline(value); })
+      .catch(() => { if (current) toast.error('Could not load speaker labels'); });
+    return () => { current = false; };
+  }, [meetingId]);
+  async function identify() {
+    setBusy(true);
+    try { setTimeline(await invoke<SpeakerTimeline>('identify_meeting_speakers', {meetingId, model})); }
+    catch (e) { toast.error('Speaker identification failed', {description:String(e)}); }
+    finally { setBusy(false); }
+  }
+  async function saveName() {
+    if (editing === null || savingName) return;
+    setSavingName(true);
+    try {
+      await invoke('rename_meeting_speaker', {meetingId, speaker:editing, name});
+      setTimeline(t => t && ({...t, names:{...t.names, [editing]:name.trim()}}));
+      setEditing(null);
+    } catch { toast.error('Could not save the speaker name'); }
+    finally { setSavingName(false); }
+  }
+  async function seek(seconds: number) {
+    try {
+      const path = await invoke<string>('meeting_playback_path', {meetingId});
+      const audio = player.current;
+      if (!audio) return;
+      const url = convertFileSrc(path);
+      if (audio.src !== url) audio.src = url;
+      audio.currentTime = seconds;
+      setPlaying(true);
+      await audio.play();
+    } catch { toast.error('Could not play this recording'); }
+  }
   // Convert transcripts to segments if pagination is not used but we want virtualization
   const convertedSegments = useMemo(() => {
     if (usePagination && segments) {
@@ -79,8 +128,30 @@ export function TranscriptPanel({
       </div>
 
       {/* Transcript content - use virtualized view for better performance */}
+      {meetingId && meetingFolderPath && model && !timeline && (
+        <Button className="self-start mx-4 my-2" size="sm" variant="outline" disabled={busy || isRecording} onClick={identify}>
+          {busy ? 'Identifying speakers…' : 'Identify speakers'}
+        </Button>
+      )}
+      <audio ref={player} controls className={playing ? 'w-full px-4' : 'hidden'} />
+      <Dialog open={editing !== null} onOpenChange={open => { if (!open && !savingName) setEditing(null); }}>
+        <DialogContent><DialogHeader><DialogTitle>Rename speaker in this meeting</DialogTitle></DialogHeader>
+          <form onSubmit={e=>{e.preventDefault(); void saveName();}}>
+            <Input aria-label="Speaker name" maxLength={80} value={name} placeholder={`Speaker ${editing}`} onChange={e=>setName(e.target.value)} />
+            <DialogFooter className="mt-4"><Button type="submit" disabled={savingName}>Save name</Button></DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
       <div className="flex-1 overflow-hidden pb-4">
         <VirtualizedTranscriptView
+          onSeek={meetingId && meetingFolderPath ? seek : undefined}
+          renderSpeaker={timeline ? segment => {
+            const id = lookup(segment.timestamp, segment.endTime ?? undefined);
+            if (id === undefined) return null;
+            const label = timeline.names[id] || `Speaker ${id}`;
+            return <button type="button" title="Rename speaker in this meeting" onClick={() => {setName(timeline.names[id] || ''); setEditing(id);}}
+              className="max-w-32 shrink-0 truncate rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-800 hover:bg-blue-100">{label}</button>;
+          } : undefined}
           segments={convertedSegments}
           isRecording={isRecording}
           isPaused={false}

@@ -13,6 +13,8 @@ import { TranscriptSegmentData } from "@/types";
 export interface VirtualizedTranscriptViewProps {
     /** Transcript segments to display */
     segments: TranscriptSegmentData[];
+    renderSpeaker?: (segment: TranscriptSegmentData) => React.ReactNode;
+    onSeek?: (seconds: number) => void;
     /** Whether recording is in progress */
     isRecording?: boolean;
     /** Whether recording is paused */
@@ -65,6 +67,8 @@ function cleanStopWords(text: string): string {
 
 // Memoized transcript segment component
 const TranscriptSegment = memo(function TranscriptSegment({
+    speaker,
+    onSeek,
     id,
     timestamp,
     text,
@@ -72,6 +76,8 @@ const TranscriptSegment = memo(function TranscriptSegment({
     isStreaming,
     showConfidence,
 }: {
+    speaker?: React.ReactNode;
+    onSeek?: (seconds: number) => void;
     id: string;
     timestamp: number;
     text: string;
@@ -85,7 +91,7 @@ const TranscriptSegment = memo(function TranscriptSegment({
         <div id={`segment-${id}`} className="mb-3">
             <div className="flex items-start gap-2">
                 <Tooltip>
-                    <TooltipTrigger>
+                    <TooltipTrigger onClick={onSeek ? () => onSeek(timestamp) : undefined} aria-label={onSeek ? `Play from ${formatRecordingTime(timestamp)}` : undefined}>
                         <span className="text-xs text-gray-400 mt-1 flex-shrink-0 min-w-[50px]">
                             {formatRecordingTime(timestamp)}
                         </span>
@@ -96,6 +102,7 @@ const TranscriptSegment = memo(function TranscriptSegment({
                         )}
                     </TooltipContent>
                 </Tooltip>
+                {speaker}
                 <div className="flex-1">
                     {isStreaming ? (
                         <div className="bg-gray-100 border border-gray-200 rounded-lg px-3 py-2">
@@ -112,6 +119,8 @@ const TranscriptSegment = memo(function TranscriptSegment({
 
 export const VirtualizedTranscriptView: React.FC<VirtualizedTranscriptViewProps> = ({
     segments,
+    renderSpeaker,
+    onSeek,
     isRecording = false,
     isPaused = false,
     isProcessing = false,
@@ -291,6 +300,8 @@ export const VirtualizedTranscriptView: React.FC<VirtualizedTranscriptViewProps>
                                 >
                                     <TranscriptSegment
                                         id={segment.id}
+                                        speaker={renderSpeaker?.(segment)}
+                                        onSeek={onSeek}
                                         timestamp={segment.timestamp}
                                         text={getDisplayText(segment)}
                                         confidence={segment.confidence}
@@ -347,6 +358,8 @@ export const VirtualizedTranscriptView: React.FC<VirtualizedTranscriptViewProps>
                                 >
                                     <TranscriptSegment
                                         id={segment.id}
+                                        speaker={renderSpeaker?.(segment)}
+                                        onSeek={onSeek}
                                         timestamp={segment.timestamp}
                                         text={getDisplayText(segment)}
                                         confidence={segment.confidence}

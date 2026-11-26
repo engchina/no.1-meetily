@@ -53,6 +53,12 @@ export interface TranscribeAudioRequest {
 // Model configuration for different use cases
 export const MODEL_CONFIGS: Record<string, Partial<ModelInfo>> = {
   // Standard f16 models (full precision)
+  'kotoba-whisper-v2.0': {
+    description: 'Full precision Kotoba-Whisper for Japanese transcription.',
+    size_mb: 1520,
+    accuracy: 'High',
+    speed: 'Medium'
+  },
   'large-v3': {
     description: 'Highest accuracy, best for important meetings. Slower processing.',
     size_mb: 2951,
@@ -111,6 +117,12 @@ export const MODEL_CONFIGS: Record<string, Partial<ModelInfo>> = {
   },
 
   // Q5_0 quantized models (balanced speed/accuracy)
+  'kotoba-whisper-v2.0-q5_0': {
+    description: 'Distilled Whisper model for Japanese transcription.',
+    size_mb: 538,
+    accuracy: 'High',
+    speed: 'Medium'
+  },
   'medium-q5_0': {
     description: 'Quantized medium model, professional quality with better speed.',
     size_mb: 514,
@@ -219,6 +231,8 @@ export function getModelTagline(modelName: string, speed: ProcessingSpeed, accur
     featureText = 'Most accurate';
   } else if (baseName === 'large-v3-turbo') {
     featureText = 'Best accuracy with speed';
+  } else if (baseName === 'kotoba-whisper-v2.0') {
+    featureText = 'Japanese transcription';
   } else if (baseName === 'medium') {
     featureText = accuracy === 'High' ? 'Professional quality' : 'Balanced quality';
   } else if (baseName === 'small') {

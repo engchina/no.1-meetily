@@ -58,7 +58,12 @@ export function RetranscribeDialog({
   meetingFolderPath,
   onComplete,
 }: RetranscribeDialogProps) {
-  const { selectedLanguage, transcriptModelConfig } = useConfig();
+  const { selectedLanguage, transcriptModelConfig, finalModelKey } = useConfig();
+  const preferredModel = useMemo(() => {
+    if (!finalModelKey) return transcriptModelConfig;
+    const [provider, model] = finalModelKey.split(':');
+    return { provider: provider === 'whisper' ? 'localWhisper' : provider, model };
+  }, [finalModelKey, transcriptModelConfig]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<RetranscriptionProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +77,7 @@ export function RetranscribeDialog({
     loadingModels,
     fetchModels,
     resetSelection,
-  } = useTranscriptionModels(transcriptModelConfig);
+  } = useTranscriptionModels(preferredModel);
 
   // Stable refs for callbacks to avoid listener re-registration
   const onCompleteRef = useRef(onComplete);

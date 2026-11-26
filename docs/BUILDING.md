@@ -44,6 +44,15 @@ For a production build, run `cargo build -p llama-helper --release` and copy the
 
 These commands build the helper without an explicit GPU backend. Its optional acceleration features are `metal`, `cuda`, and `vulkan`, each requiring a compatible platform and toolchain. Do not forward Whisper's `coreml`, `hipblas`, or `openblas` flags to the helper.
 
+For **Built-in AI summaries on a Windows NVIDIA GPU**, build the helper with
+`cargo build -p llama-helper --release --features cuda`. Stage the resulting
+`llama-helper.exe` using the Windows destination above before building the desktop
+app. If you set `CARGO_TARGET_DIR`, take the executable from its `release` directory.
+Make the matching CUDA runtime and cuBLAS DLLs available to the desktop process.
+During a fresh summary generation, llama.cpp reports the device and the actual
+number of model layers offloaded. The helper's earlier VRAM estimate alone does
+not confirm that the model loaded on the GPU.
+
 These paths assume an ordinary native-host workspace build. With a custom Cargo output directory or cross-compilation, copy from the actual configured output and use the actual build target as the suffix instead of the `rustc` host.
 
 After staging the helper, run application commands from `frontend/` with dependencies installed:

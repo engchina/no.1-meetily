@@ -1,0 +1,48 @@
+{
+  "community-1": [
+    {
+      "sha256": null,
+      "name": "config.yaml",
+      "url": "https://huggingface.co/pyannote/speaker-diarization-community-1/resolve/3533c8cf8e369892e6b79ff1bf80f7b0286a54ee/config.yaml",
+      "bytes": 444
+    },
+    {
+      "sha256": null,
+      "name": "embedding/pytorch_model.bin",
+      "url": "https://huggingface.co/pyannote/speaker-diarization-community-1/resolve/3533c8cf8e369892e6b79ff1bf80f7b0286a54ee/embedding/pytorch_model.bin",
+      "bytes": 26646242
+    },
+    {
+      "sha256": null,
+      "name": "plda/plda.npz",
+      "url": "https://huggingface.co/pyannote/speaker-diarization-community-1/resolve/3533c8cf8e369892e6b79ff1bf80f7b0286a54ee/plda/plda.npz",
+      "bytes": 133852
+    },
+    {
+      "sha256": null,
+      "name": "plda/xvec_transform.npz",
+      "url": "https://huggingface.co/pyannote/speaker-diarization-community-1/resolve/3533c8cf8e369892e6b79ff1bf80f7b0286a54ee/plda/xvec_transform.npz",
+      "bytes": 134376
+    },
+    {
+      "sha256": null,
+      "name": "segmentation/pytorch_model.bin",
+      "url": "https://huggingface.co/pyannote/speaker-diarization-community-1/resolve/3533c8cf8e369892e6b79ff1bf80f7b0286a54ee/segmentation/pytorch_model.bin",
+      "bytes": 5906507
+    }
+  ],
+  "local": [
+    {
+      "sha256": "220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079",
+      "name": "segmentation.onnx",
+      "url": "https://huggingface.co/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0/resolve/9403a6902bb58e3d5ae8c7e77c3422de279db2e0/model.onnx",
+      "bytes": 5992913
+    },
+    {
+      "sha256": "53cab20ba8f2eb2f6e2d89ecc18e88ef3222169b61b4419cbc13666744a4574b",
+      "name": "embedding.onnx",
+      "url": "https://huggingface.co/csukuangfj/speaker-embedding-models/resolve/a8055d6daef723a6a4ecf4de233708575bf4994f/3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx",
+      "bytes": 28281165
+    }
+  ]
+}

@@ -261,7 +261,14 @@ pub async fn start_import<R: Runtime>(
     provider: Option<String>,
 ) -> Result<ImportResult> {
     // Acquire guard - ensures flag is cleared even on panic/early return
+    let startup = super::common::acquire_engine_lifecycle_lock().await;
     let _guard = ImportGuard::acquire().map_err(|e| anyhow!(e))?;
+    if super::retranscription::is_retranscription_in_progress() {
+        let message = "Please wait for full-recording transcription to finish";
+        let _ = app.emit("import-error", ImportError { error: message.into() });
+        return Err(anyhow!(message));
+    }
+    drop(startup);
 
     // Reset cancellation flag
     IMPORT_CANCELLED.store(false, Ordering::SeqCst);

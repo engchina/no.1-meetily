@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { invoke } from '@tauri-apps/api/core';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Eye, EyeOff, Lock, Unlock } from 'lucide-react';
-import { ModelManager } from './WhisperModelManager';
+import { ModelManager, getDisplayName as whisperModelName } from './WhisperModelManager';
+import { getModelDisplayName as parakeetModelName } from '@/lib/parakeet';
 import { ParakeetModelManager } from './ParakeetModelManager';
+import { SpeakerModelSettings } from './SpeakerModelSettings';
+import { useConfig } from '@/contexts/ConfigContext';
+import { useTranscriptionModels } from '@/hooks/useTranscriptionModels';
 
 
 export interface TranscriptModelProps {
@@ -22,6 +27,11 @@ export interface TranscriptSettingsProps {
 }
 
 export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelConfig, onModelSelect }: TranscriptSettingsProps) {
+    const { finalModelKey, setFinalModelKey } = useConfig();
+    const [finalProvider, finalModel] = finalModelKey.split(':');
+    const modelLabel = (provider: string, name: string) => provider === 'whisper' ? whisperModelName(name) : parakeetModelName(name);
+    const { availableModels, fetchModels } = useTranscriptionModels(undefined);
+    useEffect(() => { void fetchModels(); }, [fetchModels]);
     const [apiKey, setApiKey] = useState<string | null>(transcriptModelConfig.apiKey || null);
     const [showApiKey, setShowApiKey] = useState<boolean>(false);
     const [isApiKeyLocked, setIsApiKeyLocked] = useState<boolean>(true);
@@ -104,7 +114,7 @@ export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelCo
                 <div className="space-y-4 pb-6">
                     <div>
                         <Label className="block text-sm font-medium text-gray-700 mb-1">
-                            Transcript Model
+                            Live transcription model
                         </Label>
                         <div className="flex space-x-2 mx-1">
                             <Select
@@ -173,6 +183,28 @@ export function TranscriptSettings({ transcriptModelConfig, setTranscriptModelCo
                     )}
 
 
+                    <div>
+                        <Label htmlFor="final-transcription-model" className="block text-sm font-medium text-gray-700 mb-1">Full-recording retranscription model</Label>
+                        <Select value={finalModelKey || 'off'}
+                            onOpenChange={(open) => { if (open) void fetchModels(); }}
+                            onValueChange={(key) => setFinalModelKey(key === 'off' ? '' : key)}>
+                            <SelectTrigger id="final-transcription-model"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="off">Keep the live transcript</SelectItem>
+                                {finalModelKey && !availableModels.some(m => `${m.provider}:${m.name}` === finalModelKey) &&
+                                    <SelectItem value={finalModelKey} disabled>{modelLabel(finalProvider, finalModel)} (unavailable)</SelectItem>}
+                                {availableModels.map(m => <SelectItem key={`${m.provider}:${m.name}`} value={`${m.provider}:${m.name}`}>{modelLabel(m.provider, m.name)}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        {finalModel && (
+                            <motion.div key={finalModelKey} initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+                                className="text-xs text-gray-500 text-center pt-2">
+                                Using {modelLabel(finalProvider, finalModel)} to retranscribe the full recording
+                            </motion.div>
+                        )}
+                    </div>
+
+                    <SpeakerModelSettings />
                     {requiresApiKey && (
                         <div>
                             <Label className="block text-sm font-medium text-gray-700 mb-1">

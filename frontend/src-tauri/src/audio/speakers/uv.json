@@ -1,0 +1,26 @@
+{
+  "macos-aarch64": {
+    "url": "https://files.pythonhosted.org/packages/63/91/c4ddf7e55e05394967615050cc364a999157a44c008d0e1e9db2ed49a11c/uv-0.10.4-py3-none-macosx_11_0_arm64.whl",
+    "sha256": "751959135a62f006ef51f3fcc5d02ec67986defa0424d470cce0918eede36a55"
+  },
+  "windows-aarch64": {
+    "url": "https://files.pythonhosted.org/packages/7b/e8/c6ba7ceee3ec58d21156b4968449e6a12af15eea8d26308b3b3ffeef2baf/uv-0.10.4-py3-none-win_arm64.whl",
+    "sha256": "28c59a02d7a648b75a9c2ea735773d9d357a1eee773b78593c275b0bef1a4b73"
+  },
+  "linux-x86_64": {
+    "url": "https://files.pythonhosted.org/packages/f2/b3/4b9580d62e1245df52e8516cf3e404ff39cc72634d2d749d47b1dada4161/uv-0.10.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "sha256": "82978155e571f2ac3dd57077bd746bfe41b65fa19accc3c92d1f09632cd36c63"
+  },
+  "linux-aarch64": {
+    "url": "https://files.pythonhosted.org/packages/25/92/606701b147d421ba2afe327d25f1ec5f59e519157b7e530d09cf61781d22/uv-0.10.4-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl",
+    "sha256": "c184891b496c5fa04a7e1396d7f1953f52c97a5635636330854ab68f9e8ec212"
+  },
+  "macos-x86_64": {
+    "url": "https://files.pythonhosted.org/packages/3e/c6/b86f3fdcde9f270e6dc1ff631a4fe73971bf4162c4dd169c7621110361b8/uv-0.10.4-py3-none-macosx_10_12_x86_64.whl",
+    "sha256": "44dd91ef224cfce2203716ecf244c3d3641269d1c99996aab852248caf2aeba4"
+  },
+  "windows-x86_64": {
+    "url": "https://files.pythonhosted.org/packages/31/dd/1900452678d46f6a649ab8167bededb02500b0561fc9f69e1f52607895c7/uv-0.10.4-py3-none-win_amd64.whl",
+    "sha256": "4a1c595cf692fa611019a7ad9bf4b0757fccd0a3f838ca05e53db82912ddaa39"
+  }
+}

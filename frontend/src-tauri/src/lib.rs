@@ -943,6 +943,14 @@ pub fn run() {
             utils::open_system_settings,
             // Retranscription commands
             audio::retranscription::start_retranscription_command,
+            audio::retranscription::finalize_recording_transcript,
+            audio::speakers::speaker_model_status,
+            audio::speakers::download_speaker_model,
+            audio::speakers::cancel_speaker_download,
+            audio::speakers::identify_meeting_speakers,
+            audio::speakers::get_meeting_speakers,
+            audio::speakers::rename_meeting_speaker,
+            audio::speakers::meeting_playback_path,
             audio::retranscription::cancel_retranscription_command,
             audio::retranscription::is_retranscription_in_progress_command,
             // Import audio commands

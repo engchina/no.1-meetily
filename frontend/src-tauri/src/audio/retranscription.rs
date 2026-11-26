@@ -97,8 +97,14 @@ pub async fn start_retranscription<R: Runtime>(
     provider: Option<String>,
 ) -> Result<RetranscriptionResult> {
     // Acquire guard - ensures flag is cleared even on panic/early return
+    let startup = super::common::acquire_engine_lifecycle_lock().await;
     let _guard = RetranscriptionGuard::acquire().map_err(|e| anyhow!(e))?;
-
+    if super::recording_commands::is_recording().await || super::import::is_import_in_progress() {
+        let message = "Another recording or audio import is in progress";
+        let _ = app.emit("retranscription-error", RetranscriptionError { meeting_id, error: message.into() });
+        return Err(anyhow!(message));
+    }
+    drop(startup);
     // Reset cancellation flag
     RETRANSCRIPTION_CANCELLED.store(false, Ordering::SeqCst);
 
@@ -139,7 +145,7 @@ pub async fn start_retranscription<R: Runtime>(
 
 /// Find audio file in meeting folder
 /// Tries common names first, then scans for any file with an audio extension
-fn find_audio_file(folder: &Path) -> Result<PathBuf> {
+pub(super) fn find_audio_file(folder: &Path) -> Result<PathBuf> {
     let candidates = [
         "audio.mp4", "audio.m4a", "audio.wav", "audio.mp3",
         "audio.flac", "audio.ogg", "recording.mp4",
@@ -421,6 +427,9 @@ async fn run_retranscription<R: Runtime>(
 
     // Create transcript segments with proper timestamps from VAD
     let segments = create_transcript_segments(&all_transcripts);
+    if segments.is_empty() {
+        return Err(anyhow!("No transcript segments were produced"));
+    }
 
     // Save to database
     let app_state = app
@@ -776,7 +785,24 @@ pub struct RetranscriptionStarted {
     pub message: String,
 }
 
-// Start retranscription (Beta gated using configContext.betaFeatures)
+/// Wait for the final transcript to be committed before opening the saved meeting.
+#[tauri::command]
+pub async fn finalize_recording_transcript<R: Runtime>(
+    app: AppHandle<R>,
+    meeting_id: String,
+    meeting_folder_path: String,
+    language: Option<String>,
+    model: String,
+    provider: String,
+) -> Result<RetranscriptionResult, String> {
+    if !matches!(provider.as_str(), "whisper" | "parakeet") || model.is_empty() {
+        return Err("Choose an installed Whisper or Parakeet model for final transcription".into());
+    }
+    start_retranscription(app, meeting_id, meeting_folder_path, language, Some(model), Some(provider))
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub async fn start_retranscription_command<R: Runtime>(
     app: AppHandle<R>,

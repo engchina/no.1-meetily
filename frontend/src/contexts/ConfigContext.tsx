@@ -50,6 +50,8 @@ interface ConfigContextType {
   isModelConfigLoading: boolean;
 
   // Transcript model configuration
+  finalModelKey: string;
+  setFinalModelKey: (key: string) => void;
   transcriptModelConfig: TranscriptModelProps;
   setTranscriptModelConfig: (config: TranscriptModelProps | ((prev: TranscriptModelProps) => TranscriptModelProps)) => void;
 
@@ -110,6 +112,14 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
 
   // Transcript model configuration state
+  const [finalModelKey, updateFinalModelKey] = useState('');
+  useEffect(() => {
+    updateFinalModelKey(localStorage.getItem('finalTranscriptionModel') || '');
+  }, []);
+  const setFinalModelKey = useCallback((key: string) => {
+    localStorage.setItem('finalTranscriptionModel', key);
+    updateFinalModelKey(key);
+  }, []);
   const [transcriptModelConfig, setTranscriptModelConfig] = useState<TranscriptModelProps>({
     provider: 'parakeet',
     model: 'parakeet-tdt-0.6b-v3-int8',
@@ -499,6 +509,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     updateProviderApiKey,
     transcriptModelConfig,
     setTranscriptModelConfig,
+    finalModelKey,
+    setFinalModelKey,
     selectedDevices,
     setSelectedDevices,
     selectedLanguage,
@@ -524,6 +536,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     updateProviderApiKey,
     transcriptModelConfig,
     selectedDevices,
+    finalModelKey,
+    setFinalModelKey,
     selectedLanguage,
     handleSetSelectedLanguage,
     showConfidenceIndicator,

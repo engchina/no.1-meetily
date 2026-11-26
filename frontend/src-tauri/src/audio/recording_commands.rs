@@ -439,6 +439,9 @@ pub async fn start_recording_with_meeting_name<R: Runtime>(
     #[cfg(target_os = "linux")]
     let start_generation = START_GENERATION.load(Ordering::SeqCst);
     let engine_lifecycle_guard = super::common::acquire_engine_lifecycle_lock().await;
+    if super::retranscription::is_retranscription_in_progress() {
+        return Err("Please wait for full-recording transcription to finish".into());
+    }
     #[cfg(target_os = "linux")]
     if START_GENERATION.load(Ordering::SeqCst) != start_generation { return Err("Recording startup cancelled".into()); }
 
@@ -667,6 +670,9 @@ pub async fn start_recording_with_devices_and_meeting<R: Runtime>(
     #[cfg(target_os = "linux")]
     let start_generation = START_GENERATION.load(Ordering::SeqCst);
     let engine_lifecycle_guard = super::common::acquire_engine_lifecycle_lock().await;
+    if super::retranscription::is_retranscription_in_progress() {
+        return Err("Please wait for full-recording transcription to finish".into());
+    }
     #[cfg(target_os = "linux")]
     if START_GENERATION.load(Ordering::SeqCst) != start_generation { return Err("Recording startup cancelled".into()); }
 
