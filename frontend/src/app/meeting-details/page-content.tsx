@@ -248,6 +248,8 @@ export default function PageContent({
               availableTemplates={templates.availableTemplates}
               selectedTemplate={templates.selectedTemplate}
               onTemplateSelect={templates.handleTemplateSelection}
+              onTemplateSaved={templates.handleTemplateSaved}
+              onTemplateDeleted={templates.handleTemplateDeleted}
               isModelConfigLoading={isModelConfigLoading}
               onOpenModelSettings={handleRegisterModalOpen}
             />

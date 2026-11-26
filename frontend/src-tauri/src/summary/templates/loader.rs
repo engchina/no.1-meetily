@@ -93,6 +93,9 @@ fn load_custom_template(template_id: &str) -> Option<String> {
 /// # Returns
 /// Parsed and validated Template struct
 pub fn get_template(template_id: &str) -> Result<Template, String> {
+    if template_id.is_empty() || template_id.contains(['/', '\\', ':']) || template_id.chars().any(char::is_control) {
+        return Err("Invalid template identifier".into());
+    }
     info!("Loading template: {}", template_id);
 
     // Try custom template first, then bundled, then built-in
@@ -115,6 +118,52 @@ pub fn get_template(template_id: &str) -> Result<Template, String> {
 
     // Parse and validate
     validate_and_parse_template(&json_content)
+}
+
+pub fn is_custom_template(id: &str) -> bool {
+    defaults::get_builtin_template(id).is_none()
+        && !BUNDLED_TEMPLATES_DIR.read().ok().and_then(|dir| dir.clone())
+            .is_some_and(|dir| dir.join(format!("{id}.json")).is_file())
+        && get_custom_templates_dir().is_some_and(|dir| dir.join(format!("{id}.json")).is_file())
+}
+
+static WRITER: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn check_original(source: &str, original: &Template) -> Result<(), String> {
+    if &get_template(source)? != original {
+        return Err("This template has changed. Reopen it to load the latest version.".into());
+    }
+    Ok(())
+}
+
+pub fn delete_template(id: &str, original: &Template) -> Result<(), String> {
+    let _guard = WRITER.lock().map_err(|_| "Could not lock template storage")?;
+    check_original(id, original)?;
+    if !is_custom_template(id) {
+        return Err("Only custom templates can be deleted.".into());
+    }
+    let dir = get_custom_templates_dir().ok_or("Template storage is unavailable")?;
+    std::fs::remove_file(dir.join(format!("{id}.json"))).map_err(|e| e.to_string())
+}
+
+pub fn save_template(source: Option<&str>, original: Option<&Template>, draft: &Template) -> Result<String, String> {
+    let _guard = WRITER.lock().map_err(|_| "Could not lock template storage")?;
+    draft.validate()?;
+    let id = match (source, original) {
+        (Some(id), Some(template)) => {
+            check_original(id, template)?;
+            if is_custom_template(id) { id.to_owned() } else { format!("custom-{}", uuid::Uuid::new_v4()) }
+        }
+        (None, None) => format!("custom-{}", uuid::Uuid::new_v4()),
+        _ => return Err("Missing original template.".into()),
+    };
+    let dir = get_custom_templates_dir().ok_or("Template storage is unavailable")?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let file = tempfile::NamedTempFile::new_in(&dir).map_err(|e| e.to_string())?;
+    serde_json::to_writer_pretty(file.as_file(), draft).map_err(|e| e.to_string())?;
+    file.as_file().sync_all().map_err(|e| e.to_string())?;
+    file.persist(dir.join(format!("{id}.json"))).map_err(|e| e.to_string())?;
+    Ok(id)
 }
 
 /// Validate and parse template JSON
@@ -235,6 +284,14 @@ mod tests {
     fn test_get_nonexistent_template() {
         let result = get_template("nonexistent_template");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn built_in_template_cannot_be_deleted() {
+        let id = "standard_meeting";
+        let template = get_template(id).unwrap();
+        assert_eq!(delete_template(id, &template).unwrap_err(), "Only custom templates can be deleted.");
+        assert_eq!(get_template(id).unwrap(), template);
     }
 
     #[test]

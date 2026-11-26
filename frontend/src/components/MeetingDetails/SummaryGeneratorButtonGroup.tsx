@@ -1,6 +1,7 @@
 "use client";
 
 import { ModelConfig, ModelSettingsModal } from '@/components/ModelSettingsModal';
+import { TemplateEditor, type TemplateInfo } from './TemplateEditor';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sparkles, Settings, Loader2, FileText, Check, Square } from 'lucide-react';
@@ -32,6 +34,8 @@ interface SummaryGeneratorButtonGroupProps {
   availableTemplates: Array<{ id: string, name: string, description: string }>;
   selectedTemplate: string;
   onTemplateSelect: (templateId: string, templateName: string) => void;
+  onTemplateSaved: (template: TemplateInfo) => void;
+  onTemplateDeleted: (id: string) => void;
   hasTranscripts?: boolean;
   hasSummary?: boolean;
   isModelConfigLoading?: boolean;
@@ -49,6 +53,8 @@ export function SummaryGeneratorButtonGroup({
   availableTemplates,
   selectedTemplate,
   onTemplateSelect,
+  onTemplateSaved,
+  onTemplateDeleted,
   hasTranscripts = true,
   hasSummary = false,
   isModelConfigLoading = false,
@@ -56,6 +62,7 @@ export function SummaryGeneratorButtonGroup({
   languageSlot
 }: SummaryGeneratorButtonGroupProps) {
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [templateDialog, setTemplateDialog] = useState<'new' | 'preview' | null>(null);
 
   // Expose the function to open the modal via callback registration
   useEffect(() => {
@@ -187,10 +194,14 @@ export function SummaryGeneratorButtonGroup({
                 )}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => setTemplateDialog('preview')}>Preview &amp; edit current template</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setTemplateDialog('new')}>New template</DropdownMenuItem>
 
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+      {templateDialog && <TemplateEditor id={templateDialog === 'new' ? null : selectedTemplate} onClose={() => setTemplateDialog(null)} onSaved={onTemplateSaved} onDeleted={onTemplateDeleted}/>}
     </ButtonGroup>
   );
 }

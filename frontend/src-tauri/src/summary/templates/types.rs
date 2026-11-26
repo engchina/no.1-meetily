@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Represents a single section in a meeting template
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TemplateSection {
     /// Section title (e.g., "Summary", "Action Items")
     pub title: String,
@@ -22,7 +22,7 @@ pub struct TemplateSection {
 }
 
 /// Represents a complete meeting template
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Template {
     /// Template display name
     pub name: String,
@@ -37,11 +37,11 @@ pub struct Template {
 impl Template {
     /// Validates the template structure
     pub fn validate(&self) -> Result<(), String> {
-        if self.name.is_empty() {
+        if self.name.trim().is_empty() {
             return Err("Template name cannot be empty".to_string());
         }
 
-        if self.description.is_empty() {
+        if self.description.trim().is_empty() {
             return Err("Template description cannot be empty".to_string());
         }
 
@@ -50,11 +50,11 @@ impl Template {
         }
 
         for (i, section) in self.sections.iter().enumerate() {
-            if section.title.is_empty() {
+            if section.title.trim().is_empty() {
                 return Err(format!("Section {} has empty title", i));
             }
 
-            if section.instruction.is_empty() {
+            if section.instruction.trim().is_empty() {
                 return Err(format!("Section '{}' has empty instruction", section.title));
             }
 
@@ -89,8 +89,8 @@ impl Template {
 
         for section in &self.sections {
             instructions.push_str(&format!(
-                "- **For the '{}' section:** {}.\n",
-                section.title, section.instruction
+                "- **For the '{}' section:** {}. Output format: {}.\n",
+                section.title, section.instruction, section.format
             ));
 
             // Add item format instructions if present
@@ -140,6 +140,22 @@ mod tests {
             sections: vec![],
         };
 
+        assert!(template.validate().is_err());
+    }
+
+    #[test]
+    fn edited_section_format_and_example_reach_generation_instructions() {
+        let mut template: Template = serde_json::from_str(
+            include_str!("../../../templates/standard_meeting.json")
+        ).unwrap();
+        template.sections.swap(0, 1);
+        template.sections[0].format = "paragraph".into();
+        template.sections[0].item_format = Some("Decision (owner)".into());
+        let instructions = template.to_section_instructions();
+        assert!(instructions.find("'Key Decisions'").unwrap() < instructions.find("'Summary'").unwrap());
+        assert!(instructions.contains("Output format: paragraph"));
+        assert!(instructions.contains("Decision (owner)"));
+        template.sections[0].instruction = "  ".into();
         assert!(template.validate().is_err());
     }
 

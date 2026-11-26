@@ -39,6 +39,17 @@ export function useTemplates() {
   }, []);
 
   return {
+    handleTemplateDeleted(id: string) {
+      setAvailableTemplates(current => current.filter(t => t.id !== id));
+      setSelectedTemplate(current => current === id ? 'standard_meeting' : current);
+      toast.success('Template deleted');
+    },
+    handleTemplateSaved(template: {id: string; name: string; description: string}) {
+      setAvailableTemplates(current => [...current.filter(t => t.id !== template.id), template]
+        .sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedTemplate(template.id);
+      toast.success('Template saved', { description: `Using "${template.name}" for this meeting.` });
+    },
     availableTemplates,
     selectedTemplate,
     handleTemplateSelection,

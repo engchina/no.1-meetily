@@ -30,6 +30,8 @@ pub struct TemplateDetails {
 
     /// List of section titles in order
     pub sections: Vec<String>,
+    pub template: templates::Template,
+    pub editable: bool,
 }
 
 /// Lists all available templates
@@ -84,15 +86,35 @@ pub async fn api_get_template_details<R: Runtime>(
         .collect();
 
     let details = TemplateDetails {
+        editable: templates::is_custom_template(&template_id),
         id: template_id,
-        name: template.name,
-        description: template.description,
+        name: template.name.clone(),
+        description: template.description.clone(),
         sections: section_titles,
+        template,
     };
 
     info!("Retrieved template details for '{}'", details.name);
 
     Ok(details)
+}
+
+#[tauri::command]
+pub async fn api_save_summary_template(
+    template_id: Option<String>,
+    original: Option<templates::Template>,
+    draft: templates::Template,
+) -> Result<TemplateInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let id = templates::save_template(template_id.as_deref(), original.as_ref(), &draft)?;
+        Ok(TemplateInfo { id, name: draft.name, description: draft.description })
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn api_delete_summary_template(template_id: String, original: templates::Template) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || templates::delete_template(&template_id, &original))
+        .await.map_err(|e| e.to_string())?
 }
 
 /// Validates a custom template JSON string
